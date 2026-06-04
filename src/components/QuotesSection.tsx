@@ -692,7 +692,8 @@ export default function QuotesSection({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop View Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs md:text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-gray-200 text-slate-500">
@@ -766,7 +767,7 @@ export default function QuotesSection({
                     <td className="px-4 py-3 whitespace-nowrap bg-amber-50/10 border-x border-amber-50/10">
                       {permissions.seeCost ? (
                         <div>
-                          <span className="font-mono font-bold text-amber-700">{formatCurrency(q.price)}</span>
+                           <span className="font-mono font-bold text-amber-700">{formatCurrency(q.price)}</span>
                           {isBestPrice && (
                             <div className="flex items-center gap-0.5 text-[9px] font-bold text-green-600 whitespace-nowrap mt-0.5">
                               <Star size={10} className="fill-green-600 stroke-[3]" /> Giá mua tốt nhất
@@ -833,7 +834,7 @@ export default function QuotesSection({
                         ${q.status === 'Đã duyệt' ? 'bg-green-100 text-green-700' : ''}
                         ${q.status === 'Chờ duyệt' ? 'bg-amber-100 text-amber-700' : ''}
                         ${q.status === 'Hết hạn' ? 'bg-rose-100 text-rose-700' : ''}
-                        ${q.status === 'Mới' ? 'bg-slate-150 text-slate-600 bg-slate-100' : ''}
+                        ${q.status === 'Mới' ? 'bg-slate-100 text-slate-600' : ''}
                       `}>
                         {q.status}
                       </span>
@@ -863,7 +864,7 @@ export default function QuotesSection({
                               setDeleteTargetId(q.id);
                               setDeleteTargetName(q.device);
                             }}
-                            className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-md transition"
+                            className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-650 rounded-md transition"
                             title="Xoá báo giá"
                           >
                             <Trash2 size={14} />
@@ -885,6 +886,162 @@ export default function QuotesSection({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View Card List */}
+        <div className="block lg:hidden divide-y divide-gray-100">
+          {filteredQuotes.map((q, idx) => {
+            const totalBuy = q.price * q.qty;
+            const devLower = q.device.toLowerCase().trim();
+            const isBestPrice = q.price === bestPrices[devLower];
+            const unitProfit = (q.sellPrice || 0) - q.price;
+            const marginPct = q.sellPrice ? (unitProfit / q.sellPrice) * 100 : 0;
+
+            return (
+              <div key={q.id} className={`p-4 space-y-3.5 transition-colors duration-150 ${isBestPrice ? 'bg-green-50/15' : 'hover:bg-slate-50/50'}`}>
+                {/* Header: Best price badge, status, and control actions */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-[10px] text-gray-450 font-bold">#{idx + 1}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide uppercase leading-normal
+                        ${q.status === 'Đã duyệt' ? 'bg-green-100 text-green-700' : ''}
+                        ${q.status === 'Chờ duyệt' ? 'bg-amber-100 text-amber-700' : ''}
+                        ${q.status === 'Hết hạn' ? 'bg-rose-100 text-rose-700' : ''}
+                        ${q.status === 'Mới' ? 'bg-slate-100 text-slate-605 text-slate-600' : ''}
+                      `}>
+                        {q.status}
+                      </span>
+                      {isBestPrice && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-100 text-green-800 text-[9px] font-bold">
+                          <Star size={8} className="fill-green-800" /> Tốt nhất
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-gray-950 text-xs sm:text-sm mt-1 leading-snug break-words">{q.device}</h4>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => handleOpenDetail(q)}
+                      className="p-1.5 bg-slate-50 hover:bg-blue-50 text-blue-600 rounded-lg transition border border-gray-100"
+                      title="Xem thông số đầy đủ"
+                    >
+                      <Eye size={13} />
+                    </button>
+                    {permissions.canEdit && (
+                      <button
+                        onClick={() => handleOpenEdit(q)}
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-blue-705 rounded-lg transition border border-gray-100"
+                        title="Sửa báo giá"
+                      >
+                        <Edit size={13} />
+                      </button>
+                    )}
+                    {permissions.canDelete && (
+                      <button
+                        onClick={() => {
+                          setDeleteTargetId(q.id);
+                          setDeleteTargetName(q.device);
+                        }}
+                        className="p-1.5 bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition border border-gray-100"
+                        title="Xoá báo giá"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Grid for parameters */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                  <div>
+                    <span className="text-gray-400 font-medium block">Model | Thương hiệu</span>
+                    <span className="font-mono text-slate-700 font-semibold">{q.model || '—'}</span>
+                    <span className="mx-1 text-gray-300">/</span>
+                    <span className="text-[10px] uppercase font-black text-slate-600">{q.brand || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 font-medium block">Nhà cung cấp</span>
+                    <span className="font-bold text-slate-800 truncate block max-w-[130px]">{q.supplier}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 font-medium block">Số lượng</span>
+                    <span className="font-extrabold text-slate-800 text-xs">{q.qty} cái</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 font-medium block">Danh mục / Dự án</span>
+                    <span className="text-slate-600 font-semibold">{q.cat}</span>
+                    {q.project && (
+                      <span className="ml-1 text-[9px] font-extrabold bg-indigo-50 text-indigo-705 text-indigo-700 px-1 py-0.5 rounded border border-indigo-100/50">
+                        {q.project}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Financial segment */}
+                <div className="flex items-center justify-between gap-2 border-t border-gray-100 pt-3 flex-wrap">
+                  {permissions.seeCost ? (
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] font-bold text-amber-600 block uppercase tracking-wider">Giá nhập (Tổng mua)</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="font-mono font-bold text-amber-700 text-xs">{formatCurrency(q.price)}</span>
+                        <span className="font-mono text-[9px] text-gray-400">({formatCurrency(totalBuy)})</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] font-bold text-amber-600 block uppercase tracking-wider">Giá nhập</span>
+                      <span className="font-bold text-gray-300 text-xs filter blur-xs selection:invisible">*****đ</span>
+                    </div>
+                  )}
+
+                  {permissions.seeSell ? (
+                    <div className="space-y-0.5 text-right">
+                      <span className="text-[9px] font-bold text-blue-600 block uppercase tracking-wider">Giá bán thầu</span>
+                      {q.sellPrice > 0 ? (
+                        <span className="font-mono font-bold text-blue-700 text-xs">{formatCurrency(q.sellPrice)}</span>
+                      ) : (
+                        <span className="text-gray-400 text-[10px] italic">Chưa chào giá</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5 text-right">
+                      <span className="text-[9px] font-bold text-blue-600 block uppercase tracking-wider">Giá bán</span>
+                      <span className="font-bold text-gray-300 text-xs filter blur-xs selection:invisible">*****đ</span>
+                    </div>
+                  )}
+
+                  {permissions.seeProfit && q.sellPrice > 0 && (
+                    <div className="space-y-0.5 text-right">
+                      <span className="text-[9px] font-bold text-green-600 block uppercase tracking-wider">Lợi nhuận (Biên %)</span>
+                      <div className="flex items-center justify-end gap-1 font-mono text-xs font-bold">
+                        <span className={unitProfit >= 0 ? 'text-green-600' : 'text-rose-600'}>
+                          {formatCurrency(unitProfit * q.qty)}
+                        </span>
+                        <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-md
+                          ${marginPct >= 20 ? 'bg-green-100 text-green-800' : ''}
+                          ${marginPct >= 10 && marginPct < 20 ? 'bg-amber-100 text-amber-800' : ''}
+                          ${marginPct < 10 ? 'bg-red-100 text-red-800' : ''}
+                        `}>
+                          +{marginPct.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {filteredQuotes.length === 0 && (
+            <div className="py-12 text-center text-gray-400">
+              <SlidersHorizontal size={36} className="mx-auto text-gray-200 mb-2" />
+              <h4 className="font-semibold text-gray-650">Không kết hợp được bộ lọc kết quả nào</h4>
+              <p className="text-xs text-gray-400 mt-1">Vui lòng thay đổi thông tin lọc tìm kiếm hoặc từ khoá.</p>
+            </div>
+          )}
         </div>
       </div>
 

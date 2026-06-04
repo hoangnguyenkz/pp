@@ -14,7 +14,8 @@ import UserManagementSection from './components/UserManagementSection';
 // Lucide Icons
 import {
   Boxes, LayoutGrid, Building, Landmark, BarChart3, Users, Cloud,
-  LogOut, ShieldAlert, CheckCircle, AlertCircle, RefreshCw, Key, HelpCircle, Copy
+  LogOut, ShieldAlert, CheckCircle, AlertCircle, RefreshCw, Key, HelpCircle, Copy,
+  Menu, X
 } from 'lucide-react';
 
 const APPS_SCRIPT_TEMPLATE = `// ═══════════════════════════════════════════════════
@@ -134,6 +135,7 @@ export default function App() {
 
   // Active viewing tab
   const [activeTab, setActiveTab] = useState<'all' | 'supplier' | 'project' | 'chart' | 'users' | 'sheets'>('all');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Sync state
   const [scriptUrl, setScriptUrl] = useState(() => localStorage.getItem('pricetrack_script_url') || '');
@@ -209,6 +211,172 @@ export default function App() {
       setActiveTab('all');
     }
   }, [activePermissions, activeTab]);
+
+  // Sidebar reusable content for mobile and desktop layout
+  const renderSidebarContent = () => {
+    if (!currentUser) return null;
+    return (
+      <>
+        <div className="space-y-6">
+          {/* Logo */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-extrabold shadow-sm">
+                <Boxes size={20} className="stroke-[2.5]" />
+              </div>
+              <div>
+                <h2 className="text-white font-black text-sm tracking-tight leading-tight">TID CO.LTD</h2>
+                <p className="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Price Tracking Pro</p>
+              </div>
+            </div>
+            {/* Close button inside sidebar (visible on mobile only) */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition lg:hidden"
+              title="Đóng menu"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* User profile capsule card */}
+          <div className="p-3 bg-slate-800/65 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-blue-500 text-white rounded-md flex items-center justify-center font-bold">
+                {currentUser.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="max-w-[110px]">
+                <p className="text-slate-200 font-bold truncate">{currentUser.name}</p>
+                <span className="text-[9px] text-slate-400 capitalize block truncate">
+                  {currentUser.role === 'custom' ? 'Custom' : currentUser.role}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md transition"
+              title="Đăng xuất"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-1 text-xs">
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2.5 block mb-2">
+              Danh mục thầu
+            </span>
+
+            <button
+              onClick={() => { setActiveTab('all'); setIsMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
+                ${activeTab === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
+              `}
+            >
+              <LayoutGrid size={15} /> Tất cả báo giá
+            </button>
+
+            {activePermissions.canAccessSupplier ? (
+              <button
+                onClick={() => { setActiveTab('supplier'); setIsMobileMenuOpen(false); }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition text-left font-bold
+                  ${activeTab === 'supplier' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
+                `}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Building size={15} /> Nhà cung cấp
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 bg-slate-800 text-slate-400 rounded">Active</span>
+              </button>
+            ) : (
+              <div
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 cursor-not-allowed opacity-50 font-bold"
+                title="Tài khoản của bạn không được phân quyền xem tab Nhà cung cấp"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Building size={15} /> Nhà cung cấp
+                </span>
+                <span className="text-[9px] bg-red-950/40 text-red-450 border border-red-900/40 rounded px-1">Khoá</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => { setActiveTab('project'); setIsMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
+                ${activeTab === 'project' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
+              `}
+            >
+              <Landmark size={15} /> Theo dự án thầu
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('chart'); setIsMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
+                ${activeTab === 'chart' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
+              `}
+            >
+              <BarChart3 size={15} /> Biểu đồ phân tích
+            </button>
+
+            {/* Administrations */}
+            {currentUser.role === 'admin' && (
+              <>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2.5 pt-4 block mb-2">
+                  Quản trị viên
+                </span>
+
+                <button
+                  onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
+                    ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  <Users size={15} /> Phân quyền người dùng
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('sheets'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
+                    ${activeTab === 'sheets' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  <Cloud size={15} /> Kết nối Google Sheets
+                </button>
+              </>
+            )}
+          </nav>
+        </div>
+
+        {/* Sync Status bottom indicator */}
+        <div className="border-t border-slate-800 pt-4 space-y-2">
+          <div
+            onClick={fetchDataFromSheets}
+            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition text-[10px] select-none
+              ${syncStatus === 'nourl' ? 'bg-slate-800/40 text-slate-500' : ''}
+              ${syncStatus === 'saving' ? 'bg-yellow-950/20 text-yellow-500 border border-yellow-900/30' : ''}
+              ${syncStatus === 'ok' ? 'bg-green-950/25 text-green-400 border border-green-900/30' : ''}
+              ${syncStatus === 'idle' ? 'bg-slate-800/70 text-slate-400 hover:bg-slate-800 border border-slate-700/50' : ''}
+              ${syncStatus === 'error' ? 'bg-red-950/35 text-red-400 border border-red-900/30' : ''}
+            `}
+            title={scriptUrl ? "Tải lại dữ liệu sống từ Google Sheets" : "Cấu hình Google Sheets để bật đồng bộ"}
+          >
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full
+                ${syncStatus === 'nourl' ? 'bg-slate-500' : ''}
+                ${syncStatus === 'saving' ? 'bg-yellow-400 animate-pulse' : ''}
+                ${syncStatus === 'ok' ? 'bg-green-400' : ''}
+                ${syncStatus === 'idle' ? 'bg-blue-400' : ''}
+                ${syncStatus === 'error' ? 'bg-red-500 animate-pulse' : ''}
+              `} />
+              <span className="font-semibold">{syncMessage}</span>
+            </div>
+            {scriptUrl && <RefreshCw size={10} className={`${syncStatus === 'saving' ? 'animate-spin text-yellow-550' : 'text-slate-400'}`} />}
+          </div>
+          <p className="text-[9px] text-slate-600 text-center leading-normal">PriceTrack Pro v4.0 · 2026</p>
+        </div>
+      </>
+    );
+  };
 
   // Handle local persistence helper
   const saveStateLocally = (
@@ -635,183 +803,63 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/70 flex antialiased text-slate-800">
-      {/* Structural left sidebar navigation */}
-      <aside className="w-60 min-w-60 bg-slate-900 text-slate-350 flex flex-col justify-between p-4 border-r border-slate-800 shrink-0">
-        <div className="space-y-6">
-          {/* Logo */}
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-extrabold shadow-sm">
-              <Boxes size={20} className="stroke-[2.5]" />
-            </div>
-            <div>
-              <h2 className="text-white font-black text-sm tracking-tight leading-tight">TID CO.LTD</h2>
-              <p className="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Price Tracking Pro</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50/70 flex antialiased text-slate-800 relative">
+      {/* Mobile Sidebar Backdrop overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-subtle z-40 lg:hidden transition-opacity duration-200"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-          {/* User profile capsule card */}
-          <div className="p-3 bg-slate-800/65 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-blue-500 text-white rounded-md flex items-center justify-center font-bold">
-                {currentUser.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="max-w-[110px]">
-                <p className="text-slate-200 font-bold truncate">{currentUser.name}</p>
-                <span className="text-[9px] text-slate-400 capitalize block truncate">
-                  {currentUser.role === 'custom' ? 'Custom' : currentUser.role}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-1 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md transition"
-              title="Đăng xuất"
-            >
-              <LogOut size={14} />
-            </button>
-          </div>
+      {/* Mobile Sliding Sidebar Drawer Panel */}
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-slate-350 flex flex-col justify-between p-4 border-r border-slate-800 z-50 transition-transform duration-300 ease-in-out lg:hidden
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {renderSidebarContent()}
+      </aside>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1 text-xs">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2.5 block mb-2">
-              Danh mục thầu
-            </span>
-
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
-                ${activeTab === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
-              `}
-            >
-              <LayoutGrid size={15} /> Tất cả báo giá
-            </button>
-
-            {/* Revised block link to supplier section, safeguarded with access permission */}
-            {activePermissions.canAccessSupplier ? (
-              <button
-                onClick={() => setActiveTab('supplier')}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition text-left font-bold
-                  ${activeTab === 'supplier' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
-                `}
-              >
-                <span className="flex items-center gap-2.5">
-                  <Building size={15} /> Nhà cung cấp
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 bg-slate-800 text-slate-400 rounded">Active</span>
-              </button>
-            ) : (
-              <div
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 cursor-not-allowed opacity-50 font-bold"
-                title="Tài khoản của bạn không được phân quyền xem tab Nhà cung cấp"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Building size={15} /> Nhà cung cấp
-                </span>
-                <span className="text-[9px] bg-red-950/40 text-red-450 border border-red-900/40 rounded px-1">Khoá</span>
-              </div>
-            )}
-
-            <button
-              onClick={() => setActiveTab('project')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
-                ${activeTab === 'project' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
-              `}
-            >
-              <Landmark size={15} /> Theo dự án thầu
-            </button>
-
-            <button
-              onClick={() => setActiveTab('chart')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
-                ${activeTab === 'chart' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
-              `}
-            >
-              <BarChart3 size={15} /> Biểu đồ phân tích
-            </button>
-
-            {/* Administrations */}
-            {currentUser.role === 'admin' && (
-              <>
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2.5 pt-4 block mb-2">
-                  Quản trị viên
-                </span>
-
-                <button
-                  onClick={() => setActiveTab('users')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
-                    ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
-                  `}
-                >
-                  <Users size={15} /> Phân quyền người dùng
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('sheets')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition text-left font-bold
-                    ${activeTab === 'sheets' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}
-                  `}
-                >
-                  <Cloud size={15} /> Kết nối Google Sheets
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-
-        {/* Sync Status bottom indicator */}
-        <div className="border-t border-slate-800 pt-4 space-y-2">
-          <div
-            onClick={fetchDataFromSheets}
-            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition text-[10px] select-none
-              ${syncStatus === 'nourl' ? 'bg-slate-800/40 text-slate-500' : ''}
-              ${syncStatus === 'saving' ? 'bg-yellow-950/20 text-yellow-500 border border-yellow-900/30' : ''}
-              ${syncStatus === 'ok' ? 'bg-green-950/25 text-green-400 border border-green-900/30' : ''}
-              ${syncStatus === 'idle' ? 'bg-slate-800/70 text-slate-400 hover:bg-slate-800 border border-slate-700/50' : ''}
-              ${syncStatus === 'error' ? 'bg-red-950/35 text-red-400 border border-red-900/30' : ''}
-            `}
-            title={scriptUrl ? "Tải lại dữ liệu sống từ Google Sheets" : "Cấu hình Google Sheets để bật đồng bộ"}
-          >
-            <div className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full
-                ${syncStatus === 'nourl' ? 'bg-slate-500' : ''}
-                ${syncStatus === 'saving' ? 'bg-yellow-400 animate-pulse' : ''}
-                ${syncStatus === 'ok' ? 'bg-green-400' : ''}
-                ${syncStatus === 'idle' ? 'bg-blue-400' : ''}
-                ${syncStatus === 'error' ? 'bg-red-500 animate-pulse' : ''}
-              `} />
-              <span className="font-semibold">{syncMessage}</span>
-            </div>
-            {scriptUrl && <RefreshCw size={10} className={`${syncStatus === 'saving' ? 'animate-spin text-yellow-500' : 'text-slate-400'}`} />}
-          </div>
-          <p className="text-[9px] text-slate-600 text-center leading-normal">PriceTrack Pro v4.0 · 2026</p>
-        </div>
+      {/* Structural desktop-only left sidebar navigation */}
+      <aside className="hidden lg:flex w-60 min-w-60 bg-slate-900 text-slate-350 flex-col justify-between p-4 border-r border-slate-800 shrink-0">
+        {renderSidebarContent()}
       </aside>
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Top Header Section */}
-        <header className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-30 shadow-3xs shrink-0">
-          <div>
-            <h1 className="text-base md:text-lg font-extrabold text-gray-900">
-              {activeTab === 'all' && 'Bộ quản lý và so sánh báo giá thầu'}
-              {activeTab === 'supplier' && 'Quản trị hồ sơ Nhà cung cấp'}
-              {activeTab === 'project' && 'Quản trị báo giá thầu theo Dự án'}
-              {activeTab === 'chart' && 'Báo cáo trực quan & Phân tích cơ chế giá'}
-              {activeTab === 'users' && 'Hệ quản lý nhân sự nghiệp vụ'}
-              {activeTab === 'sheets' && 'Cơ cấu cổng kết nối Google Sheets'}
-            </h1>
-            <p className="text-[10px] md:text-xs text-slate-500 leading-normal">
-              {activeTab === 'all' && 'Phân tích chéo các thông số thầu, lọc giá rẻ nhất từ đối tác thầu.'}
-              {activeTab === 'supplier' && 'Lưu trữ thông tin liên hệ, xem thống kê chất lượng thầu từ đối tác.'}
-              {activeTab === 'project' && 'Kế hoạch hóa doanh thu, biên đầu tư vật tư công trình.'}
-              {activeTab === 'chart' && 'Trực quan cạnh tranh báo thầu gộp, cơ hội tối ưu tỷ suất biên.'}
-              {activeTab === 'users' && 'Bảo vệ giá mua/giá bán phục vụ phân cấp an toàn tài chính.'}
-              {activeTab === 'sheets' && 'Tích hợp Apps Script đám mây giúp đồng bộ báo giá đa văn phòng.'}
-            </p>
+        <header className="px-4 md:px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-30 shadow-3xs shrink-0 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Hamburger Button for Mobile devices */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-1.5 hover:bg-gray-150 text-gray-600 hover:text-gray-950 rounded-lg transition lg:hidden shrink-0"
+              title="Mở menu"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-sm md:text-base lg:text-lg font-extrabold text-gray-900 truncate">
+                {activeTab === 'all' && 'Bộ quản lý và so sánh báo giá thầu'}
+                {activeTab === 'supplier' && 'Quản trị hồ sơ Nhà cung cấp'}
+                {activeTab === 'project' && 'Quản trị báo giá thầu theo Dự án'}
+                {activeTab === 'chart' && 'Báo cáo trực quan & Phân tích cơ chế giá'}
+                {activeTab === 'users' && 'Hệ quản lý nhân sự nghiệp vụ'}
+                {activeTab === 'sheets' && 'Cơ cấu cổng kết nối Google Sheets'}
+              </h1>
+              <p className="text-[10px] md:text-xs text-slate-500 leading-normal truncate">
+                {activeTab === 'all' && 'Phân tích chéo các thông số thầu, lọc giá rẻ nhất từ đối tác thầu.'}
+                {activeTab === 'supplier' && 'Lưu trữ thông tin liên hệ, xem thống kê chất lượng thầu từ đối tác.'}
+                {activeTab === 'project' && 'Kế hoạch hóa doanh thu, biên đầu tư vật tư công trình.'}
+                {activeTab === 'chart' && 'Trực quan cạnh tranh báo thầu gộp, cơ hội tối ưu tỷ suất biên.'}
+                {activeTab === 'users' && 'Bảo vệ giá mua/giá bán phục vụ phân cấp an toàn tài chính.'}
+                {activeTab === 'sheets' && 'Tích hợp Apps Script đám mây giúp đồng bộ báo giá đa văn phòng.'}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide uppercase leading-normal
               ${currentUser.role === 'admin' ? 'bg-purple-100 text-purple-800' : ''}
               ${currentUser.role === 'sales' ? 'bg-green-100 text-green-800' : ''}
@@ -819,13 +867,13 @@ export default function App() {
               ${currentUser.role === 'viewer' ? 'bg-slate-100 text-slate-600' : ''}
               ${currentUser.role === 'custom' ? 'bg-blue-100 text-blue-800' : ''}
             `}>
-              Vai trò: {currentUser.role === 'custom' ? 'Tùy chỉnh' : currentUser.role}
+              <span className="hidden sm:inline">Vai trò:</span> {currentUser.role === 'custom' ? 'Tùy chỉnh' : currentUser.role}
             </span>
           </div>
         </header>
 
         {/* Content Box */}
-        <div className="p-6 max-w-7xl w-full mx-auto space-y-6">
+        <div className="p-3 md:p-6 max-w-7xl w-full mx-auto space-y-4 md:space-y-6">
           {/* Active section routing */}
           {activeTab === 'all' && (
             <QuotesSection
