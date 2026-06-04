@@ -3,7 +3,8 @@ import { Quote, Supplier, RolePerms } from '../types';
 import * as XLSX from 'xlsx';
 import {
   Search, Filter, SlidersHorizontal, FileSpreadsheet, Share2, Plus, Edit, Trash2, Eye,
-  Sparkles, CheckCircle, Clock, AlertTriangle, CloudUpload, Info, Check, ArrowUpDown, X, Star
+  Sparkles, CheckCircle, Clock, AlertTriangle, CloudUpload, Info, Check, ArrowUpDown, X, Star,
+  FileText, Building, Coins, Tag, TrendingUp
 } from 'lucide-react';
 
 interface QuotesSectionProps {
@@ -27,6 +28,53 @@ export default function QuotesSection({
   onDeleteQuote,
   onImportQuotes
 }: QuotesSectionProps) {
+  // Dynamics stats calculation for dashboard cards
+  const stats = useMemo(() => {
+    const totalQuotes = quotes.length;
+    const approvedQuotes = quotes.filter(q => q.status === 'Đã duyệt').length;
+    const pendingQuotes = quotes.filter(q => q.status === 'Chờ duyệt').length;
+    const expiredQuotes = quotes.filter(q => q.status === 'Hết hạn').length;
+    
+    const uniqueSuppliersCount = Array.from(new Set(quotes.map(q => q.supplier).filter(Boolean))).length;
+    const uniqueProjectsCount = Array.from(new Set(quotes.map(q => q.project).filter(Boolean))).length;
+    
+    const totalCost = quotes.reduce((acc, q) => acc + (q.price * q.qty), 0);
+    const totalCostVat = quotes.reduce((acc, q) => acc + (q.price * q.qty * (1 + q.vat / 100)), 0);
+    
+    const totalSell = quotes.reduce((acc, q) => acc + ((q.sellPrice || 0) * q.qty), 0);
+    const totalProfit = totalSell - totalCost;
+    
+    // markup % based on cost as shown in the screenshot (155.8M profit / 495.2M cost = 31.5%)
+    const targetMarkupPct = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+
+    return {
+      totalQuotes,
+      approvedQuotes,
+      pendingQuotes,
+      expiredQuotes,
+      uniqueSuppliersCount,
+      uniqueProjectsCount,
+      totalCost,
+      totalCostVat,
+      totalSell,
+      totalProfit,
+      markupPct: targetMarkupPct
+    };
+  }, [quotes]);
+
+  const formatCompactVal = (val: number) => {
+    if (val >= 1000000000) {
+      return (val / 1000000000).toFixed(1) + 'B';
+    }
+    if (val >= 1000000) {
+      return (val / 1000000).toFixed(1) + 'M';
+    }
+    if (val >= 1000) {
+      return (val / 1000).toFixed(1) + 'K';
+    }
+    return val.toString();
+  };
+
   // Filters state
   const [search, setSearch] = useState('');
   const [fSupplier, setFSupplier] = useState('');
@@ -426,6 +474,119 @@ export default function QuotesSection({
 
   return (
     <div className="space-y-6">
+      {/* Overview Statistics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        {/* Card 1: Tổng báo giá */}
+        <div id="stat-total-quotes" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <FileText size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Tổng báo giá</span>
+            <span className="text-xl font-bold font-mono text-gray-900 mt-0.5 block">{stats.totalQuotes}</span>
+            <span className="text-[10px] text-gray-500 font-medium block">mục nhập</span>
+          </div>
+        </div>
+
+        {/* Card 2: Đã duyệt */}
+        <div id="stat-approved-quotes" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+              <CheckCircle size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Đã duyệt</span>
+            <span className="text-xl font-bold font-mono text-gray-900 mt-0.5 block">{stats.approvedQuotes}</span>
+            <span className="text-[10px] text-amber-600 font-semibold block">{stats.pendingQuotes} chờ duyệt</span>
+          </div>
+        </div>
+
+        {/* Card 3: Hết hạn */}
+        <div id="stat-expired-quotes" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <AlertTriangle size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Hết hạn</span>
+            <span className="text-xl font-bold font-mono text-gray-900 mt-0.5 block">{stats.expiredQuotes}</span>
+            <span className="text-[10px] text-gray-400 font-medium block">cần cập nhật</span>
+          </div>
+        </div>
+
+        {/* Card 4: Nhà cung cấp */}
+        <div id="stat-suppliers" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+              <Building size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Nhà cung cấp</span>
+            <span className="text-xl font-bold font-mono text-gray-900 mt-0.5 block">{stats.uniqueSuppliersCount}</span>
+            <span className="text-[10px] text-indigo-600 font-semibold block">{stats.uniqueProjectsCount} dự án</span>
+          </div>
+        </div>
+
+        {/* Card 5: Tổng giá mua */}
+        <div id="stat-total-purchase" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-amber-50 text-amber-605 text-amber-600 rounded-lg">
+              <Coins size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Tổng giá mua</span>
+            <span className="text-xl font-bold font-mono text-gray-900 mt-0.5 block">
+              {permissions.seeCost ? formatCompactVal(stats.totalCost) : <span className="filter blur-xs select-none">******</span>}
+            </span>
+            <span className="text-[10px] text-gray-500 font-medium block whitespace-nowrap">
+              {permissions.seeCost ? `Có VAT: ${formatCompactVal(stats.totalCostVat)}` : 'Bảo mật mua'}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 6: Tổng giá bán */}
+        <div id="stat-total-sell" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <Tag size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Tổng giá bán</span>
+            <span className="text-xl font-bold font-mono text-gray-900 mt-0.5 block">
+              {permissions.seeSell ? formatCompactVal(stats.totalSell) : <span className="filter blur-xs select-none">******</span>}
+            </span>
+            <span className="text-[10px] text-gray-400 font-medium block whitespace-nowrap">
+              {permissions.seeSell && permissions.seeCost ? `Biên lợi nhuận: ${stats.markupPct.toFixed(1)}%` : 'Bảo mật bán'}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 7: Tổng lợi nhuận */}
+        <div id="stat-total-profit" className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-3xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+              <TrendingUp size={18} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Tổng lợi nhuận</span>
+            <span className="text-xl font-bold font-mono text-emerald-600 mt-0.5 block">
+              {permissions.seeProfit ? formatCompactVal(stats.totalProfit) : <span className="filter blur-xs select-none">******</span>}
+            </span>
+            <span className="text-[10px] text-emerald-750 font-semibold block whitespace-nowrap">
+              {permissions.seeProfit ? `Biên: ${stats.markupPct.toFixed(1)}%` : 'Bảo mật LN'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Search and Filters Strip */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-3xs space-y-3">
         <div className="flex flex-wrap items-center gap-3">
