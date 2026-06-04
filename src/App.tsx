@@ -138,7 +138,15 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Sync state
-  const [scriptUrl, setScriptUrl] = useState(() => localStorage.getItem('pricetrack_script_url') || '');
+  const [scriptUrl, setScriptUrl] = useState(() => {
+    const defaultUrl = 'https://script.google.com/macros/s/AKfycby5vCHXqykUQgRfhNveoCyLW4zgfxJ4KAzjxQI4OaLqnyO3w6yY7tXtGcM9SyAaaT7R/exec';
+    const cached = localStorage.getItem('pricetrack_script_url');
+    if (!cached || cached.trim() === '') {
+      localStorage.setItem('pricetrack_script_url', defaultUrl);
+      return defaultUrl;
+    }
+    return cached;
+  });
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'ok' | 'error' | 'nourl'>('nourl');
   const [syncMessage, setSyncMessage] = useState('Chưa kết nối Sheets');
   const [testingConnection, setTestingConnection] = useState(false);
@@ -969,6 +977,7 @@ export default function App() {
                         <input
                           id="sheets-connection-input-url"
                           type="text"
+                          key={scriptUrl}
                           defaultValue={scriptUrl}
                           placeholder="https://script.google.com/macros/s/.../exec"
                           className="flex-1 text-xs border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-600"
@@ -976,14 +985,14 @@ export default function App() {
                         <button
                           onClick={() => {
                             const val = (document.getElementById('sheets-connection-input-url') as HTMLInputElement)?.value;
-                            handleSaveScriptUrl(val);
+                            handleSaveScriptUrl(val || '');
                           }}
                           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-lg transition"
                         >
                           Kết nối ngay
                         </button>
                       </div>
-                      <div className="flex gap-2 pt-1 border-t border-gray-100">
+                      <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-100">
                         <button
                           onClick={handleTestConnection}
                           disabled={testingConnection || !scriptUrl}
@@ -997,6 +1006,15 @@ export default function App() {
                           className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-lg transition disabled:opacity-40"
                         >
                           Đẩy dữ liệu lên Sheets
+                        </button>
+                        <button
+                          onClick={() => {
+                            const targetUrl = 'https://script.google.com/macros/s/AKfycby5vCHXqykUQgRfhNveoCyLW4zgfxJ4KAzjxQI4OaLqnyO3w6yY7tXtGcM9SyAaaT7R/exec';
+                            handleSaveScriptUrl(targetUrl);
+                          }}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-lg transition"
+                        >
+                          Kết nối phông thầu (phongmua)
                         </button>
                       </div>
                     </div>
